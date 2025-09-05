@@ -2,6 +2,7 @@
 using eventManager.Model;
 using Microsoft.AspNetCore.Mvc.Diagnostics;
 using MySqlX.XDevAPI.Common;
+using System.Reflection;
 using static eventManager.Enums.Enums;
 
 namespace eventManager.Service
@@ -22,15 +23,46 @@ namespace eventManager.Service
             _ctx = ctx;
             _env = env;
         }
-        public async Task<IReadOnlyList<events>> GetAllEvents(IWebHostEnvironment ev)
+        //public async Task<IReadOnlyList<events>> GetAllEvents(IWebHostEnvironment ev)
+        //{
+        //    DataBaseUtil _db = new DataBaseUtil(_configuration);
+        //    List<events> events = new List<events>();
+        //    var req = _ctx.HttpContext?.Request;
+        //    var baseUrl = req != null ? $"{req.Scheme}://{req.Host}/" : "";
+        //    string query = @"select * from events";
+        //    events = await _db.GetMultipleRecordFromQuery<events>(query);
+        //    var list = events.Select(e => new events
+        //    {
+        //        id = e.id,
+        //        organiser_id = e.organiser_id,
+        //        title = e.title,
+        //        description = e.description,
+        //        location = e.location,
+        //        start_datetime = e.start_datetime,
+        //        end_datetime = e.end_datetime,
+        //        status = e.status,
+        //        created_at = e.created_at,
+        //        banner_path = string.IsNullOrEmpty(e.banner_path)
+        //                        ? null
+        //                        : baseUrl + e.banner_path,
+        //        csvFile_path = string.IsNullOrEmpty(e.csvFile_path)
+        //                        ? null
+        //                        : baseUrl + e.csvFile_path
+        //    })
+        //.ToList()
+        //.AsReadOnly();
+        //    return list;
+        //}
+        public async Task<IReadOnlyList<events>> GetAllEvents()
         {
-            DataBaseUtil _db = new DataBaseUtil(_configuration);
-            List<events> events = new List<events>();
+            var _db = new DataBaseUtil(_configuration);
             var req = _ctx.HttpContext?.Request;
-            var baseUrl = req != null ? $"{req.Scheme}://{req.Host}/" : "";
-            string query = @"select * from events";
-            events = await _db.GetMultipleRecordFromQuery<events>(query);
-            var list = events.Select(e => new events
+            var baseUrl = req != null ? $"{req.Scheme}://{req.Host}/" : string.Empty;
+
+            string query = @"SELECT * FROM events order by id desc";
+            var dbEvents = await _db.GetMultipleRecordFromQuery<events>(query);
+
+            var list = dbEvents.Select(e => new events
             {
                 id = e.id,
                 organiser_id = e.organiser_id,
@@ -40,13 +72,14 @@ namespace eventManager.Service
                 start_datetime = e.start_datetime,
                 end_datetime = e.end_datetime,
                 status = e.status,
+                ticketType = e.ticketType,
                 created_at = e.created_at,
-                template_path = string.IsNullOrEmpty(e.template_path)
-                                ? null
-                                : baseUrl + e.template_path
+                banner_path = string.IsNullOrEmpty(e.banner_path) ? null : $"{e.banner_path}"
+                //csvFile_path = string.IsNullOrEmpty(e.csvFile_path)? null: $"{baseUrl}{e.csvFile_path}"
             })
-        .ToList()
-        .AsReadOnly();
+            .ToList()
+            .AsReadOnly();
+
             return list;
         }
 
@@ -56,51 +89,98 @@ namespace eventManager.Service
             var result = new Response();
             try
             {
-
                 Dictionary<string, string> values = new Dictionary<string, string>();
                 Dictionary<string, string> where = new Dictionary<string, string>();
                 string passwordKey = _configuration["password:Key"];
                 if (newEvent.id == 0)
                 {
                     values.Add("title", newEvent.title);
-                    values.Add("organiser_id", newEvent.organiser_id.ToString());
                     values.Add("description", newEvent.description);
                     values.Add("location", newEvent.location);
                     values.Add("start_datetime", newEvent.start_datetime.ToString("yyyy-MM-dd HH:mm:ss"));
                     values.Add("end_datetime", newEvent.end_datetime.ToString("yyyy-MM-dd HH:mm:ss"));
                     values.Add("status", newEvent.status);
-                    values.Add("template_path", newEvent.template_path);
-                    var res = _db.SaveExecuteNonQuery<events>(values);
-                    if (res == 1)
+                    values.Add("banner_path", newEvent.banner_path);
+                    //values.Add("csvFile_path", newEvent.csvFile_path);
+                    values.Add("tickettype", newEvent.ticketType);
+                    values.Add("freeSeats", newEvent.freeSeats + "");
+
+                    var res = _db.SaveScalarReturnId<events>(values);
+                    if (res > 0)
                     {
+                        if (newEvent.paidTickets != null && newEvent.paidTickets.Count > 0)
+                        {
+                            foreach (var item in newEvent.paidTickets)
+                            {
+                                Dictionary<string, string> pairs = new Dictionary<string, string>();
+
+                                pairs.Add("event_id", res + "");
+                                pairs.Add("name", item.name);
+                                pairs.Add("seats", item.seats + "");
+                                pairs.Add("price", item.price + "");
+
+                                var res_paid = _db.SaveScalarReturnId<paid_tickets>(pairs);
+                            }
+                        }
+
                         result.status = 1;
                         result.message = "Saved Succefully.";
+                        result.success = true;
                     }
                     else
                     {
                         result.status = 0;
                         result.message = "Error in inset user.";
+                        result.success = false;
                     }
                 }
                 else
                 {
                     values.Add("title", newEvent.title);
-                    values.Add("organiser_id", newEvent.organiser_id.ToString());
+                    //values.Add("organiser_id", newEvent.organiser_id.ToString());
                     values.Add("description", newEvent.description);
                     values.Add("location", newEvent.location);
-                    values.Add("start_datetime", newEvent.start_datetime.ToString());
-                    values.Add("end_datetime", newEvent.end_datetime.ToString());
+                    values.Add("start_datetime", newEvent.start_datetime.ToString("yyyy-MM-dd HH:mm:ss"));
+                    values.Add("end_datetime", newEvent.end_datetime.ToString("yyyy-MM-dd HH:mm:ss"));
                     values.Add("status", newEvent.status);
+                    values.Add("tickettype", newEvent.ticketType);
+                    if (newEvent.banner != null)
+                        values.Add("banner_path", newEvent.banner_path);
+                    values.Add("csvFile_path", newEvent.csvFile_path);
+
+                    where.Add("id", newEvent.id + "");
+
                     var res = await _db.UpdateRecord<events>(values, where);
                     if (res == 1)
                     {
+
+                        string query = @"DELETE FROM paid_tickets WHERE event_id = '" + newEvent.id + "'";
+                        var rowsAffected = await _db.ExecuteDelete(query);
+
+                        if (newEvent.paidTickets != null && newEvent.paidTickets.Count > 0)
+                        {
+                            foreach (var item in newEvent.paidTickets)
+                            {
+                                Dictionary<string, string> pairs = new Dictionary<string, string>();
+
+                                pairs.Add("event_id", newEvent.id + "");
+                                pairs.Add("name", item.name);
+                                pairs.Add("seats", item.seats + "");
+                                pairs.Add("price", item.price + "");
+
+                                var res_paid = _db.SaveScalarReturnId<paid_tickets>(pairs);
+                            }
+                        }
+
                         result.status = 1;
                         result.message = "Updated Succefully.";
+                        result.success = true;
                     }
                     else
                     {
                         result.status = 0;
                         result.message = "Error in update user.";
+                        result.success = false;
                     }
                 }
             }
@@ -111,7 +191,7 @@ namespace eventManager.Service
             }
             return result;
         }
-        public async Task<eventDto?> GetEventById(long id, IWebHostEnvironment ev)
+        public async Task<events?> GetEventById(long id)
         {
             DataBaseUtil _db = new DataBaseUtil(_configuration);
             var req = _ctx.HttpContext?.Request;
@@ -125,11 +205,11 @@ namespace eventManager.Service
                 return null;
 
             // Fetch ticket types for the event
-            string ticketQuery = @"SELECT * FROM ticket_type WHERE event_id = '" + id + "'";
-            var ticketTypes = await _db.GetMultipleRecordFromQuery<ticket_type>(ticketQuery);
+            string ticketQuery = @"SELECT * FROM paid_tickets WHERE event_id = '" + id + "'";
+            var ticketTypes = await _db.GetMultipleRecordFromQuery<paid_tickets>(ticketQuery);
 
             // Map to DTO
-            var eventDto = new eventDto
+            var eventDto = new events
             {
                 id = result.id,
                 organiser_id = result.organiser_id,
@@ -140,8 +220,11 @@ namespace eventManager.Service
                 end_datetime = result.end_datetime,
                 status = result.status,
                 created_at = result.created_at,
-                template_path = string.IsNullOrEmpty(result.template_path) ? null : baseUrl + result.template_path,
-                ticket_Types = ticketTypes ?? new List<ticket_type>()
+                ticketType = result.ticketType,
+                freeSeats = result.freeSeats,
+                banner_path = string.IsNullOrEmpty(result.banner_path) ? null : result.banner_path,
+                //csvFile_path = string.IsNullOrEmpty(result.csvFile_path) ? null : baseUrl + result.csvFile_path,
+                paidTickets = ticketTypes ?? new List<paid_tickets>()
             };
 
             return eventDto;

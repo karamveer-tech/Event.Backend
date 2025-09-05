@@ -13,8 +13,10 @@ namespace eventManager.Dtos
         public DateTime end_datetime { get; set; } = DateTime.UtcNow;
         public string status { get; set; } = string.Empty;
         public DateTime created_at { get; set; } = DateTime.UtcNow;
-        public IFormFile? event_Template { get; set; }
+        public string banner_path { get; set; }
+        public string csvFile_path { get; set; }
         public string template_path { get; set; } = string.Empty;
-        public List<ticket_type> ticket_Types { get; set; }
+        public string ticketType { get; set; } = string.Empty;
+        public List<paid_tickets> paidTickets { get; set; }
     }
 }
