@@ -1,11 +1,12 @@
 ﻿using eventManager.Helper;
 using eventManager.Service;
+using Microsoft.Extensions.FileProviders;
 using MySql.Data.MySqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
- 
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -26,11 +27,27 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+// Serve default wwwroot files
+app.UseStaticFiles();
+
+// Optional: explicitly serve /uploads
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads")),
+    RequestPath = "/uploads"
+});
+
+// Enable CORS for Angular (if frontend runs on a different port)
+app.UseCors(policy =>
+    policy.AllowAnyOrigin()
+          .AllowAnyHeader()
+          .AllowAnyMethod());
 
 //// Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
 //{
-    app.UseSwagger();
+app.UseSwagger();
     app.UseSwaggerUI();
 //  }
 

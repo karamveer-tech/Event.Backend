@@ -280,7 +280,7 @@ namespace eventManager
                 await adapter.UpdateCommand.ExecuteNonQueryAsync();
                 connection.Close();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 returnVal = 0;
             }
@@ -660,6 +660,55 @@ namespace eventManager
 
             return string.IsNullOrWhiteSpace(value) ? "NULL" : $"'{value}'";
         }
+        public long SaveScalarReturnId<T>(Dictionary<string, string> parameters) where T : class, new()
+        {
+            var querystring = "insert into " + typeof(T).Name.ToLower() + "";
+            querystring += "(";
+            foreach (var parameter in parameters)
+            {
+                querystring += parameter.Key + ",";
+            }
+            if (parameters.Count > 0)
+                querystring = querystring.Remove(querystring.LastIndexOf(","));
+            querystring += ")";
+            //querystring += " output INSERTED.ID ";
+            querystring += " values";
+            querystring += "(";
+            foreach (var parameter in parameters)
+            {
+                querystring += "'" + parameter.Value + "'" + ",";
+            }
+            if (parameters.Count > 0)
+                querystring = querystring.Remove(querystring.LastIndexOf(","));
+            querystring += ");";
+            //querystring += "SELECT SCOPE_IDENTITY();";
+            return ExecuteScalarInsert2(querystring);
+        }
+        private long ExecuteScalarInsert2(string queryString)
+        {
+            var connection = new MySqlConnection();
+            var adapter = new MySqlDataAdapter();
+            var returnVal = 0l;
+            try
+            {
+                connection = new MySqlConnection(_dbSQLStirng);
+                connection.Open();
+                adapter.InsertCommand = new MySqlCommand(queryString, connection);
+                adapter.InsertCommand.ExecuteScalar();
+                returnVal = adapter.InsertCommand.LastInsertedId;
+                connection.Close();
+                //returnVal = 1;
+            }
+            catch (Exception ex)
+            {
+                returnVal = 0;
+            }
+            finally
+            {
+                connection.Dispose();
+            }
 
+            return returnVal;
+        }
     }
 }
