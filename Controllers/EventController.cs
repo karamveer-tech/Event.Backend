@@ -27,6 +27,12 @@ namespace eventManager.Controllers
             var res = await _eventService.GetAllEvents();
             return Ok(res);
         }
+        [HttpGet("get-user-events")]
+        public async Task<IActionResult> GetUserEvents()
+        {
+            var res = await _eventService.GetUserEvents();
+            return Ok(res);
+        }
         [HttpPost("create-event")]
         public async Task<IActionResult> CreateEvent([FromForm] events input, IWebHostEnvironment env)
         {

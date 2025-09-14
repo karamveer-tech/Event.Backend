@@ -82,6 +82,35 @@ namespace eventManager.Service
 
             return list;
         }
+        public async Task<IReadOnlyList<events>> GetUserEvents()
+        {
+            var _db = new DataBaseUtil(_configuration);
+            var req = _ctx.HttpContext?.Request;
+            var baseUrl = req != null ? $"{req.Scheme}://{req.Host}/" : string.Empty;
+
+            string query = @"SELECT * FROM events where status='published' order by id desc";
+            var dbEvents = await _db.GetMultipleRecordFromQuery<events>(query);
+
+            var list = dbEvents.Select(e => new events
+            {
+                id = e.id,
+                organiser_id = e.organiser_id,
+                title = e.title,
+                description = e.description,
+                location = e.location,
+                start_datetime = e.start_datetime,
+                end_datetime = e.end_datetime,
+                status = e.status,
+                ticketType = e.ticketType,
+                created_at = e.created_at,
+                banner_path = string.IsNullOrEmpty(e.banner_path) ? null : $"{e.banner_path}"
+                //csvFile_path = string.IsNullOrEmpty(e.csvFile_path)? null: $"{baseUrl}{e.csvFile_path}"
+            })
+            .ToList()
+            .AsReadOnly();
+
+            return list;
+        }
 
         public async Task<Response> AddUpdateEvent(events newEvent)
         {
