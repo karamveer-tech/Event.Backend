@@ -3,6 +3,7 @@ using eventManager.Model;
 using eventManager.Service;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
+using Microsoft.IdentityModel.Tokens;
 using MySql.Data.MySqlClient;
 using System.Text.Json;
 
@@ -47,25 +48,50 @@ namespace eventManager.Controllers
 
             var uploadsDir = Path.Combine(env.WebRootPath, "uploads");
             Directory.CreateDirectory(uploadsDir);
+            if (!Directory.Exists(uploadsDir))
+            {
+                Directory.CreateDirectory(uploadsDir);
+            }
+            var imagePaths = new List<string>();
+            foreach (var image in input.images)
+            {
+                if (image.Length > 0)
+                {
+                    // Create unique filename
+                    var uniqueName = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+                    //var absPath = Path.Combine(uploadsDir, uniqueName);
+                    var absPath_imagesPath = Path.Combine(uploadsDir, uniqueName);
+                    // Save the file
+                    await using (var stream = new FileStream(absPath_imagesPath, FileMode.Create))
+                    {
+                        await image.CopyToAsync(stream);
+                    }
+                    if (string.IsNullOrEmpty(input.ImagesPath))
+                    {
+                        input.ImagesPath = $"uploads/{uniqueName}";
+                    }
+                    else
+                    {
+                        input.ImagesPath += $",{"uploads/" + uniqueName}";
+                    }
 
+                }
+            }
             // 2️⃣  Save the file with a unique name
             var uniqueName_banner = Guid.NewGuid() + Path.GetExtension(input.banner.FileName);
             //var uniqueName_images = Guid.NewGuid() + Path.GetExtension(input.images.FileName);
             var absPath = Path.Combine(uploadsDir, uniqueName_banner);
-            //var absPath_csvFile = Path.Combine(uploadsDir, uniqueName_images);
+           
 
             await using (var stream = new FileStream(absPath, FileMode.Create))
             {
                 await input.banner.CopyToAsync(stream);
             }
-            //await using (var stream = new FileStream(absPath_csvFile, FileMode.Create))
-            //{
-            //    await input.images.CopyToAsync(stream);
-            //}
+          
 
             // 3️⃣  Store relative path in DB
             input.banner_path = $"{baseUrl}uploads/{uniqueName_banner}";
-            //input.csvFile_path = $"uploads/{uniqueName_images}";
+            //input.ImagesPath = $"uploads/{uniqueName_images}";
 
             input.paidTickets = paidTickets;
             // 4️⃣  Persist the event (your service)

@@ -130,6 +130,7 @@ namespace eventManager.Service
                     values.Add("end_datetime", newEvent.end_datetime.ToString("yyyy-MM-dd HH:mm:ss"));
                     values.Add("status", newEvent.status);
                     values.Add("banner_path", newEvent.banner_path);
+                    values.Add("ImagesPath", newEvent.ImagesPath);
                     //values.Add("csvFile_path", newEvent.csvFile_path);
                     values.Add("tickettype", newEvent.ticketType);
                     values.Add("freeSeats", newEvent.freeSeats + "");
@@ -175,7 +176,7 @@ namespace eventManager.Service
                     values.Add("tickettype", newEvent.ticketType);
                     if (newEvent.banner != null)
                         values.Add("banner_path", newEvent.banner_path);
-                    values.Add("csvFile_path", newEvent.csvFile_path);
+                    values.Add("ImagesPath", newEvent.ImagesPath);
 
                     where.Add("id", newEvent.id + "");
 
@@ -252,6 +253,7 @@ namespace eventManager.Service
                 ticketType = result.ticketType,
                 freeSeats = result.freeSeats,
                 banner_path = string.IsNullOrEmpty(result.banner_path) ? null : result.banner_path,
+                ImagesPath = string.IsNullOrEmpty(result.ImagesPath) ? null : result.ImagesPath,
                 //csvFile_path = string.IsNullOrEmpty(result.csvFile_path) ? null : baseUrl + result.csvFile_path,
                 paidTickets = ticketTypes ?? new List<paid_tickets>()
             };

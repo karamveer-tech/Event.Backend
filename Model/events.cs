@@ -23,6 +23,7 @@ namespace eventManager.Model
         public string? description { get; set; } = string.Empty;       // lowercase to match FormData
         public string? location { get; set; } = string.Empty;
         public string banner_path { get; set; } = string.Empty;
+        public string ImagesPath { get; set; } = string.Empty;
         public string csvFile_path { get; set; } = string.Empty;
         public DateTime start_datetime { get; set; }
         public DateTime end_datetime { get; set; }
@@ -30,7 +31,7 @@ namespace eventManager.Model
         public string ticketType { get; set; } = string.Empty;        // "Free" or "Paid"
         public int freeSeats { get; set; }
         public IFormFile? banner { get; set; }
-        public IFormFile? images { get; set; }
+        public List<IFormFile>? images { get; set; }
         //public IFormFile? csvFile { get; set; }
         public string paidTicketsJson { get; set; } = string.Empty;
         public List<paid_tickets>? paidTickets { get; set; }         // optional, deserialize from JSON if needed
