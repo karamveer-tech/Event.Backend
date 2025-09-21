@@ -139,7 +139,7 @@ namespace eventManager.Controllers
                 // Save new file
                 var uploadsDir = Path.Combine(_env.WebRootPath, "uploads");
                 Directory.CreateDirectory(uploadsDir);
-
+                
                 var uniqueName = Guid.NewGuid() + Path.GetExtension(input.banner.FileName);
                 var absPath = Path.Combine(uploadsDir, uniqueName);
 
@@ -156,7 +156,54 @@ namespace eventManager.Controllers
                 // Preserve old banner full URL
                 input.banner_path = existingEvent.banner_path;
             }
+            if (input.images != null)
+            {
+                // Delete old file if exists
+                if (!string.IsNullOrEmpty(existingEvent.ImagesPath))
+                {
+                    // Strip baseUrl if old path is full URL
+                    var oldRelativePath = existingEvent.ImagesPath.Replace(baseUrl + "/", "");
+                    var oldPath = Path.Combine(_env.WebRootPath, oldRelativePath);
+                    if (System.IO.File.Exists(oldPath))
+                        System.IO.File.Delete(oldPath);
+                }
+                var uploadsDir = Path.Combine(_env.WebRootPath, "uploads");
+                Directory.CreateDirectory(uploadsDir);
+                if (!Directory.Exists(uploadsDir))
+                {
+                    Directory.CreateDirectory(uploadsDir);
+                }
+                var imagePaths = new List<string>();
+                foreach (var image in input.images)
+                {
+                    if (image.Length > 0)
+                    {
+                        // Create unique filename
+                        var uniqueNameImg = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+                        //var absPath = Path.Combine(uploadsDir, uniqueName);
+                        var absPath_imagesPath = Path.Combine(uploadsDir, uniqueNameImg);
+                        // Save the file
+                        await using (var stream = new FileStream(absPath_imagesPath, FileMode.Create))
+                        {
+                            await image.CopyToAsync(stream);
+                        }
+                        if (string.IsNullOrEmpty(input.ImagesPath))
+                        {
+                            input.ImagesPath = $"uploads/{uniqueNameImg}";
+                        }
+                        else
+                        {
+                            input.ImagesPath += $",{"uploads/" + uniqueNameImg}";
+                        }
 
+                    }
+                }
+            }
+            else
+            {
+                // Preserve old banner full URL
+                input.ImagesPath = existingEvent.ImagesPath;
+            }
             // 2️⃣ Ticket Logic
             if (input.ticketType?.ToLower() == "free")
             {

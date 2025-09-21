@@ -1,4 +1,5 @@
 ﻿using eventManager.Helper;
+using eventManager.Model;
 using eventManager.Service;
 using Microsoft.Extensions.FileProviders;
 using MySql.Data.MySqlClient;
@@ -6,7 +7,7 @@ using MySql.Data.MySqlClient;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -16,6 +17,9 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<EventService>();
 builder.Services.AddScoped<RoleService>();
 builder.Services.AddScoped<OrganiserService>();
+builder.Services.AddScoped<UserService>();
+builder.Services.Configure<EmailModel>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>

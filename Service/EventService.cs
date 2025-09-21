@@ -111,7 +111,6 @@ namespace eventManager.Service
 
             return list;
         }
-
         public async Task<Response> AddUpdateEvent(events newEvent)
         {
             DataBaseUtil _db = new DataBaseUtil(_configuration);
@@ -260,18 +259,21 @@ namespace eventManager.Service
 
             return eventDto;
         }
-
         public async Task<bool> DeleteEvent(int id)
         {
             DataBaseUtil _db = new DataBaseUtil(_configuration);
 
-            string query = @"DELETE FROM events WHERE id = '" + id + "'";
-            var parameters = new { id };
+            string deleteBookingsQuery = @"DELETE FROM bookings WHERE event_id = '" + id + "'";
+                var bookingsParams = new { id };
+                await _db.ExecuteDelete(deleteBookingsQuery);
 
-            var rowsAffected = await _db.ExecuteDelete(query);
-            return rowsAffected > 0;
+                // Step 2: Delete parent row (event)
+                string deleteEventQuery = @"DELETE FROM events WHERE id = '" + id + "'";
+                var eventParams = new { id };
+                var rowsAffected = await _db.ExecuteDelete(deleteEventQuery);
+
+                return rowsAffected > 0;
         }
-
         public async Task<Response> AddUpdateTicketTypes(List<ticket_type> ticketTypes)
         {
             DataBaseUtil _db = new DataBaseUtil(_configuration);

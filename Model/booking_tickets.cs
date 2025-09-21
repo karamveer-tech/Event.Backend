@@ -8,7 +8,7 @@
         public Int64 quantity { get; set; }
         public decimal price { get; set; }
 
-        public bookings Booking { get; set; }
-        public ticket_types TicketType { get; set; }
+        //public bookings Booking { get; set; }
+        //public ticket_type TicketType { get; set; }
     }
 }
