@@ -184,29 +184,15 @@ namespace eventManager.Service
             var req = _ctx.HttpContext?.Request;
             var baseUrl = req != null ? $"{req.Scheme}://{req.Host}/" : string.Empty;
 
-            string query = @"SELECT
-                            e.id AS event_id,
-                            e.organiser_id,
-                            e.title,
-                            e.description,
-                            e.location,
-                            e.start_datetime,
-                            e.end_datetime,
-                            e.status AS event_status,
-                            e.created_at,
-                            e.banner_path,
-                            e.csvFile_path,
-                            e.ticketType,
-                            e.freeSeats,
-                            e.ImagesPath
-                         FROM events e
-                         INNER JOIN bookings b ON e.id = b.event_id
-                         WHERE b.user_id = '" + userId + "'order by e.created_at desc";
+            string query = @"SELECT e.id AS event_id,e.organiser_id,e.title,e.description,e.location,e.start_datetime,e.end_datetime,
+                            e.status AS event_status,e.created_at,e.banner_path,e.csvFile_path,e.ticketType,e.freeSeats,e.ImagesPath,
+                            b.quantity FROM events e INNER JOIN bookings b ON e.id = b.event_id WHERE b.user_id = '" + userId + "'order by e.created_at desc";
             var dbMyBookings = await _db.GetMultipleRecordFromQuery<myBookings>(query);
 
             var list = dbMyBookings.Select(e => new myBookings
             {
                 id = e.id,
+                event_id=e.event_id,
                 organiser_id = e.organiser_id,
                 title = e.title,
                 description = e.description,
@@ -216,6 +202,7 @@ namespace eventManager.Service
                 status = e.status,
                 ticketType = e.ticketType,
                 created_at = e.created_at,
+                quantity=e.quantity,
                 banner_path = string.IsNullOrEmpty(e.banner_path) ? null : $"{e.banner_path}"
             })
             .ToList()
