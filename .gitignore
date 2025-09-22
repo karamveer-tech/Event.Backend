@@ -323,3 +323,4 @@ _Pvt_Extensions
 /eventManager.csproj.user
 /.vs/eventManager/config/applicationhost.config
 /.vs/eventManager/FileContentIndex/read.lock
+/.config/dotnet-tools.json
