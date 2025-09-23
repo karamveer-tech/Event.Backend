@@ -69,5 +69,11 @@ namespace eventManager.Controllers
             var res = await _userService.GetMyBookings(userId);
             return Ok(res);
         }
+
+        [HttpGet("api-version")]
+        public IActionResult GetApiVersion()
+        {
+            return Ok(new { version = "1.0.0" });
+        }
     }
 }
