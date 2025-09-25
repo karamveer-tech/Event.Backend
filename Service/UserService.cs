@@ -66,90 +66,91 @@ namespace eventManager.Service
         }
         public async Task<Response> AddOrUpdateBooking(bookings newBooking)
         {
-            DataBaseUtil _db = new DataBaseUtil(_configuration);
             var result = new Response();
+            DataBaseUtil _db = new DataBaseUtil(_configuration);
 
             try
             {
-                Dictionary<string, string> values = new();
-                Dictionary<string, string> where = new();
-
-                values.Add("user_id", newBooking.user_id.ToString());
-                values.Add("event_id", newBooking.event_id.ToString());
-                values.Add("booking_date", newBooking.booking_date.ToString("yyyy-MM-dd HH:mm:ss"));
-                values.Add("status", newBooking.status);
-                values.Add("quantity", newBooking.quantity.ToString());
-                values.Add("total_amount", newBooking.total_amount.ToString());
+      
+                var values = new Dictionary<string, string>
+                {
+                    { "user_id", newBooking.user_id.ToString() },
+                    { "event_id", newBooking.event_id.ToString() },
+                    { "booking_date", newBooking.booking_date.ToString("yyyy-MM-dd HH:mm:ss") },
+                    { "status", newBooking.status },
+                    { "quantity", newBooking.quantity.ToString() },
+                    { "total_amount", newBooking.total_amount.ToString() }
+                };
 
                 if (newBooking.id == 0)
                 {
-                    // Insert new booking
-                    var bookingId = _db.SaveScalarReturnId<bookings>(values);
+                    long bookingId = _db.SaveScalarReturnId<bookings>(values);
 
                     if (bookingId > 0)
                     {
                        // await InsertTickets(newBooking.ticket_Types, bookingId);
+
                         result.status = 1;
-                        result.message = "Booking saved successfully.";
                         result.success = true;
+                        result.message = "Booking saved successfully.";
                         string subject = "Booking Confirmation";
                         string body = $@"
                                         <p>Dear Customer,</p>
-                                        <p>We are pleased to inform you that your booking for the event <strong>Event Name {newBooking.event_id}</strong> has been successfully confirmed.</p>
-                                        <p><strong>Booking Details:</strong></p>
-                                        <ul>
-                                            <li><strong>Booking ID:</strong> {bookingId}</li>
-                                            <li><strong>Quantity:</strong> {newBooking.quantity}</li>
-                                            <li><strong>Total Amount:</strong> {newBooking.total_amount:C}</li>
-                                        </ul>
-                                        <p>Thank you for choosing our service. We look forward to seeing you at the event!</p>
-                                        <p>Best regards,<br/>Event Team</p>";
+                                        <p>Your booking for event ID <strong>{newBooking.event_id}</strong> is confirmed.</p>
+                                        <p><strong>Booking ID:</strong> {bookingId}</p>
+                                        <p><strong>Quantity:</strong> {newBooking.quantity}</p>
+                                        <p><strong>Total Amount:</strong> {newBooking.total_amount:C}</p>
+                                        <p>Tickets:</p>
+                                        <ul>";
+
+                    
+
+                        body += "</ul><p>Thank you!</p>";
 
                         await _emailService.SendEmailAsync(newBooking.emailId, subject, body);
                     }
                     else
                     {
                         result.status = 0;
-                        result.message = "Error inserting booking.";
                         result.success = false;
+                        result.message = "Error inserting booking.";
                     }
                 }
                 else
                 {
-                    // Update booking
-                    where.Add("id", newBooking.id.ToString());
-                    var updated = await _db.UpdateRecord<bookings>(values, where);
+                    var where = new Dictionary<string, string> { { "id", newBooking.id.ToString() } };
+                    int updated = await _db.UpdateRecord<bookings>(values, where);
 
                     if (updated == 1)
                     {
-                        // Delete old tickets
-                        string query = $"DELETE FROM booking_tickets WHERE booking_id = '{newBooking.id}'";
-                        await _db.ExecuteDelete(query);
+                        // Remove old tickets
+                        string deleteQuery = $"DELETE FROM booking_tickets WHERE booking_id = '{newBooking.id}'";
+                        await _db.ExecuteDelete(deleteQuery);
 
                         // Insert new tickets
                         await InsertTickets(newBooking.ticket_Types, newBooking.id);
 
                         result.status = 1;
-                        result.message = "Booking updated successfully.";
                         result.success = true;
+                        result.message = "Booking updated successfully.";
                     }
                     else
                     {
                         result.status = 0;
-                        result.message = "Error updating booking.";
                         result.success = false;
+                        result.message = "Error updating booking.";
                     }
                 }
             }
             catch (Exception ex)
             {
                 result.status = 0;
-                result.message = "Error in booking process: " + ex.Message;
                 result.success = false;
+                result.message = "Error in booking process: " + ex.Message;
             }
 
             return result;
-            
+
         }
         private async Task InsertTickets(List<ticket_type> tickets, long bookingId)
         {
@@ -186,7 +187,7 @@ namespace eventManager.Service
 
             string query = @"SELECT e.id AS event_id,e.organiser_id,e.title,e.description,e.location,e.start_datetime,e.end_datetime,
                             e.status AS event_status,e.created_at,e.banner_path,e.csvFile_path,e.ticketType,e.freeSeats,e.ImagesPath,
-                            b.quantity FROM events e INNER JOIN bookings b ON e.id = b.event_id WHERE b.user_id = '" + userId + "'order by e.created_at desc";
+                            b.quantity FROM events e INNER JOIN bookings b ON e.id = b.event_id WHERE b.user_id = '" + userId + "'order by b.booking_date desc";
             var dbMyBookings = await _db.GetMultipleRecordFromQuery<myBookings>(query);
 
             var list = dbMyBookings.Select(e => new myBookings

@@ -49,6 +49,13 @@
         public string bookingTicketsJson { get; set; }
         public List<ticket_type>? ticket_Types { get; set; }
     }
+    public class TicketTypeDto
+    {
+        public int? ticket_type_id { get; set; }
+        public string? ticket_type_name { get; set; }
+        public int quantity { get; set; }
+        public decimal ticket_price { get; set; }
+    }
     public class totalTicketBookedCount
     {
         public int quantity { get; set; }

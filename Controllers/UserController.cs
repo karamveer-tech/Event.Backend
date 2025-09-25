@@ -45,6 +45,10 @@ namespace eventManager.Controllers
                     dto.ticket_Types = Newtonsoft.Json.JsonConvert
                         .DeserializeObject<List<ticket_type>>(dto.bookingTicketsJson);
                 }
+                if (dto.ticket_Types == null || !dto.ticket_Types.Any())
+                {
+                    return BadRequest(new { success = false, message = "No tickets provided." });
+                }
 
                 var res = await _userService.AddOrUpdateBooking(dto);
 
